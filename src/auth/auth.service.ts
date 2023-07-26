@@ -11,7 +11,10 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async comparePasswords(enteredPassword: string, dbPassword: string): Promise<boolean> {
+  async comparePasswords(
+    enteredPassword: string,
+    dbPassword: string,
+  ): Promise<boolean> {
     return bcrypt.compare(enteredPassword, dbPassword);
   }
 
@@ -22,15 +25,22 @@ export class AuthService {
     };
   }
 
-  async register(user: User): Promise<User> {
-    // Здесь вы можете добавить логику для регистрации пользователя в базе данных
-    // Например, сохранение информации о пользователе в базе данных и т.д.
-    return this.usersService.create(user);
+  async register(user: User): Promise<{ user: User; access_token: string }> {
+    const hashedPassword = bcrypt.hashSync(user.password, 10);
+    const newUser: User = {
+      ...user,
+      password: hashedPassword,
+    };
+    const createdUser = await this.usersService.create(newUser);
+    const loginResult = await this.login(createdUser);
+
+    return {
+      user: createdUser,
+      access_token: loginResult.access_token,
+    };
   }
 
   async validateUser(username: string, password: string): Promise<any> {
-    // Ваша логика для проверки пользователя по имени пользователя и паролю
-    // Верните пользователя, если проверка успешна, или null, если проверка не успешна
     const user = await this.usersService.findOne(username);
     if (user && bcrypt.compareSync(password, user.password)) {
       return user;
