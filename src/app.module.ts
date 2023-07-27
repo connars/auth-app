@@ -5,10 +5,15 @@ import { LocalStrategy } from './auth/local.strategy';
 import { UsersService } from './auth/users.service';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
-import { JwtStrategy } from './auth/strategy/jwt.strategy';
 import * as cors from 'cors';
 import { TypeOrmModule } from '@nestjs/typeorm'; // Подключаем TypeOrmModule
 import { User } from './auth/user.entity'; // Импортируем сущность User
+import { JwtAuthGuard } from './auth/jwt.auth.guard';
+import { Post } from './auth/post/post.entity';// Импортируем наш кастомный JwtAuthGuard
+import { PostsService } from './auth/post/posts.service';
+import { PostsController } from './auth/post/posts.controller';
+import { APP_INTERCEPTOR } from '@nestjs/core'; // Импортируем APP_INTERCEPTOR
+import { ClassSerializerInterceptor } from '@nestjs/common';
 
 @Module({
   imports: [
@@ -19,18 +24,28 @@ import { User } from './auth/user.entity'; // Импортируем сущно�
       username: 'root',
       password: '',
       database: 'nest',
-      entities: [User], // Передаем сущности напрямую в массиве
+      entities: [User, Post], // Передаем сущности напрямую в массиве
       synchronize: true, // Важно! Это опция для разработки, не использовать на продакшене!
     }),
-    TypeOrmModule.forFeature([User]), // Здесь указываем сущности, с которыми работает TypeORM
+    TypeOrmModule.forFeature([User, Post]), // Здесь указываем сущности, с которыми работает TypeORM
     PassportModule,
     JwtModule.register({
-      secret: 'secret-key',
+      secret: 'key',
       signOptions: { expiresIn: '1d' },
     }),
   ],
-  controllers: [AuthController],
-  providers: [AuthService, LocalStrategy, UsersService, JwtStrategy],
+  controllers: [AuthController, PostsController],
+  providers: [
+    AuthService, 
+    LocalStrategy, 
+    UsersService, 
+    JwtAuthGuard,
+    PostsService,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: ClassSerializerInterceptor,
+    },
+  ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

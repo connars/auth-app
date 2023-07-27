@@ -11,7 +11,7 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(username: string, password: string): Promise<any> {
-    const user = await this.usersService.findOne(username);
+    const user = await this.usersService.findOne(username); // Парсим айди в число и передаем его в метод findOneById
 
     if (user && this.authService.comparePasswords(password, user.password)) {
       return user;
